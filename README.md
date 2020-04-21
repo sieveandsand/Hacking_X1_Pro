@@ -9,15 +9,15 @@ Meanwhile, this project will take some detour and will first be examining the ha
 
 ## Remote Hardware
 
-![IMG_4455](\Photos\IMG_4455.jpg)
+![IMG_4455](/Photos/IMG_4455.jpg)
 
 Upon opening up the casing of the remote, we are greeted with a Cortex M3 microcontroller which is tucked under a small display. Vibration motor and pushbutton can be seen on the right side of the PCB. Antenna is located on the bottom on the board.
 
-![IMG_4456](Photos\IMG_4456.jpg)
+![IMG_4456](Photos/IMG_4456.jpg)
 
 A closer look at the ARM chip reveals its chip module: [GD32F130](http://gd32mcu.21ic.com/data/documents/shujushouce/GD32F130xx_Datasheet_Rev3.1.pdf) This chip is manufactured by GigaDevice and has same pinout as [STM32L071xx LQFP48](https://www.st.com/resource/en/datasheet/stm32l071cz.pdf). GD32F130 is basically a clone of the ST chip and carries the same functionality as LQFP48.
 
-![IMG_4458](Photos\IMG_4458.jpg)
+![IMG_4458](Photos/IMG_4458.jpg)
 
 The back of the remote PCB reveals two more ICs. The one on the right is RFX2401C RF front-end module. The one on the left is Si24R1 and is a Chinese clone of nRF24L01P.
 
@@ -40,4 +40,4 @@ From the test report, we can see that X1 Pro operates between 2402-2480 MHz and 
 
 Know the fact that each channel is separated by 2 MHz offset is crucial in determining the air data rate the chip is operating on. In the below snippet of nRF24L01+ datasheet (Si24R1 is perfectly compatible with nRF24L01+), it specifies that a 2MHz channel spacing translates to 2Mbps air data rate.
 
-![](C:\Users\qiaof\repos\Hacking_X1_Pro\Photos\NRF24L01 datasheet screenshot.jpg)
+![data_sheet](Photos/NRF24L01 datasheet screenshot.jpg)
