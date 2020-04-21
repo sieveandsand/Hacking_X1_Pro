@@ -40,4 +40,4 @@ From the test report, we can see that X1 Pro operates between 2402-2480 MHz and 
 
 Know the fact that each channel is separated by 2 MHz offset is crucial in determining the air data rate the chip is operating on. In the below snippet of nRF24L01+ datasheet (Si24R1 is perfectly compatible with nRF24L01+), it specifies that a 2MHz channel spacing translates to 2Mbps air data rate.
 
-![data_sheet](Photos/NRF24L01 datasheet screenshot.jpg)
+![data_sheet](Photos/NRF24L01_datasheet_screenshot.jpg)
