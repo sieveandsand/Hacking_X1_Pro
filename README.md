@@ -41,3 +41,18 @@ From the test report, we can see that X1 Pro operates between 2402-2480 MHz and 
 Know the fact that each channel is separated by 2 MHz offset is crucial in determining the air data rate the chip is operating on. In the below snippet of nRF24L01+ datasheet (Si24R1 is perfectly compatible with nRF24L01+), it specifies that a 2MHz channel spacing translates to 2Mbps air data rate.
 
 ![data_sheet](Photos/NRF24L01_datasheet_screenshot.jpg)
+
+
+
+## Promiscuous Sniffing on nRF24L01+
+
+Given the fact that Si24Ri is a perfect clone of nRF24L01+, and nRF24L01+ is well documented, I decided to look around and see if there are any available methods of promiscuously sniffing nRF24L01+ packets. It turns out nRF24L01+ has been successfully sniffed in 2011. Travis Godspeed did a well-documented [blog](http://travisgoodspeed.blogspot.com/2011/02/promiscuity-is-nrf24l01s-duty.html) on technical implementations of this promiscuous sniffing. My sniffing program for this project is based on his implementation, and I recommend anyone who is interested in this project to take a look at his writeup.
+
+Travis' implementation of promiscuous sniffing can be boiled down to 4 parts:
+
+1. Limit the MAC address to 2 bytes
+2. Disable checksums
+3. Set the MAC to be the same as the preamble
+4. Sort received noise for valid MAC address
+
+### Hardware Setup
