@@ -1,8 +1,30 @@
 // To find the target address, I'm guessing:
 // 1. Occurrence of correct address have to be higher or equal to 5% of all unique addresses
 // 2. False positives have very similar addresses (i.e. 53A0ACFAAE and 53A0ACFAB6)
-// could be wrong --> 3. False positives with similar addresses have very close occurrences
 
+// the channel hopping algorithm of the remote depends on how much
+// traffic is in the air. if there is no traffic (i.e. midnight), 
+// it will stay on channel 52
+
+// what we know:
+// when forward
+// 0x0000 mode 1
+// 0x0080 mode 2
+// 0x0100 mode 3
+// 0x0180 mode 4
+
+// when backward 
+// 0x0400 mode 1
+// 0x0480 mode 2
+// 0x0500 mode 3
+// 0x0580 mode 4
+
+
+// update:
+// pretty sure the first two bytes of the address are used as identification number
+// they are the same across two controllers, both start with 3932
+// ie. the first controller has the address 393271107A
+// the second controller has the address 39326C1877
 
 
 #include "include.h"
@@ -10,143 +32,222 @@ using namespace std;
 
 // global variable
 int numAddress;
+std::vector<string> blocklist;
 
 int main(int argc, char* argv[]) {
-    // reads input file
-    ifstream file("serial.txt");
-    string line;
-    vector<string> address;
-    int index = 0;
+    char c;
+    char* cvalue = NULL;
 
-    while (getline(file, line)) {
-        string temp = line.substr(0, line.find(" "));
-        if (temp.size() == 10) {
-            address.push_back(temp);
+    // flags
+    int sflag = 0;
+
+    // frequencies & increment
+    char* frequency = NULL;
+    int start_frequency;
+    int end_frequency;
+    int increment;
+
+    // com port
+    char* com;
+
+    if (argc < 2) {
+        show_usage();
+        return 1;
+    }
+
+    while ((c = getopt(argc, argv, "sf:i:c:")) != -1) {
+        switch(c) {
+            case 's':
+                sflag = 1;
+                break;
+            case 'f':
+                frequency = optarg;
+                break;
+            case 'i':
+                increment = atoi(optarg);
+                break;
+            case 'c':
+                com = optarg;
+                break;
+            case '?':
+                show_usage();
+                return 1;
+            default:
+                abort();
         }
-        index++;
-    } 
 
-    file.close();
-
-    // print the address vector
-    for (int i = 0; i < address.size(); i++) {
-        cout << address[i] << endl;
     }
-    cout << endl;
 
-    map<string, int> m = findOccurrence(address);
-    // exportMapValues(m);
+    // get the start and end frequency
+    getFrequency(frequency, start_frequency, end_frequency);
 
-    Frequency exway;
+    // Frequency object(start frequency, end frequency, increment)
+    Frequency radio (start_frequency, end_frequency, increment);
 
-    while(exway.hasNext()) {
-        
-    }
+    
     
 
+    /*
+    --------------------------------------------------------------
+        Start of Serial Communication
+    --------------------------------------------------------------
+    */
+
+   if (sflag) {
+        printInfo(com, start_frequency, end_frequency, increment, radio.num_channel);
+
+        string portNumber = com;
+        HANDLE hComm;
+        string comPort = "\\\\.\\COM" + portNumber;
+
+        // port name, read/write, no sharing, no security, open existing port only, non overlapped io, null for com devices
+        hComm = CreateFile(comPort.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+
+        if (hComm == INVALID_HANDLE_VALUE) {
+            cout << "Error in opening serial port" << endl;
+        } else {
+            cout << "Opening serial port successful" << endl;
+        }
+
+        comInit(hComm);
+        setTimeouts(hComm);
+
+        system("rmdir /q /s scans");
+        system("mkdir scans");
+
+        for (int c = 0; c < 4; c++) {
+            while (radio.hasNext()) {
+                uint8_t i = radio.next();
+                serialWriteInteger(hComm, i);
+                string fileName = "./scans/" + std::to_string(i) + ".txt";
+                cout << "Scanning channel " << std::to_string(i) << endl;
+                readSerialWriteToFile(hComm, fileName);
+                cout << "Finished scanning channel " << std::to_string(i) << endl;
+            }
+            radio.reset();
+        }
+
+        CloseHandle(hComm);
+        cout << "Serial Port Closed" << endl;
+   }
+    
+
+    /*
+    ----------------------------------------------------------------
+        End of Serial Communication
+    ----------------------------------------------------------------
+    */
+
+
+    /*
+    ----------------------------------------------------------------
+        Start of Packet Processing
+    ----------------------------------------------------------------
+    */
+
+    // initialize set
+    unordered_set<string> candidateAddress;
+    unordered_set<int> candidateChannel;
+
+    string validAddress;
+
+    // configure blocklist
+    addToBlock("5555555555");
+    addToBlock("AAAAAAAAAA");
+
+
+    radio.reset();
+    while (radio.hasNext()) {
+        int i = radio.next();
+        // reads input file
+        string fileName = "./scans/" + to_string(i) + ".txt";
+        ifstream file(fileName);
+        string line;
+        vector<string> address;
+
+        while (getline(file, line)) {
+            string temp = line.substr(0, line.find(" "));
+            if (temp.size() == 10) {            // 10 characters --> 5 byte address
+                address.push_back(temp);
+            }
+        } 
+
+        file.close();
+
+        validAddress = findOccurrence(address, i);
+        checkID(validAddress, candidateAddress);
+    }
+
+    // finds all channels that the target address has occurred
+    unordered_set<string>::iterator it;
+    for (it = candidateAddress.begin(); it != candidateAddress.end(); ++it) {
+        string s = *it;
+        findAllOccurringChannels(radio, s, candidateChannel);
+    }
+
+    unordered_set<int>::iterator it1;
+    for (it1 = candidateChannel.begin(); it1 != candidateChannel.end(); ++it1) {
+        cout << *it1 << endl;
+    }
+
+    unordered_set<string>::iterator it2;
+    for (it2 = candidateAddress.begin(); it2 != candidateAddress.end(); ++it2) {
+        string temp = *it2;
+        cout << temp << endl;
+    }
+
+    /*
+    ----------------------------------------------------------------
+        End of Packet Processing
+    ----------------------------------------------------------------
+    */
+
+    
     return 0;
 }
 
-// finds the address with the highest occurrence
-// returns a map with address as the key and number of occurrence as value
-map<string, int> findOccurrence(vector<string> &address) {
-    map<string, int> m;
-
-    // count occurrence of every string
-    for (int i = 0; i < address.size(); i++) {
-        map<string, int>::iterator it = m.find(address[i]);
-
-        if (it == m.end()) {
-            m.insert(pair<string, int>((address)[i], 1));
-        } else {
-            m[(address)[i]]++;
-        }
-    }
-
-    numAddress = m.size();
-
-    // find the max
-    map<string, int>::iterator it = m.begin();
-    for (map<string, int>::iterator it2 = m.begin(); it2 != m.end(); ++it2) {
-        if (it2 -> second > it -> second) {
-            it = it2;
-        }
-    }
-
-    // find the second to max
-    map<string, int>::iterator it3 = m.begin();
-    for (map<string, int>::iterator it4 = m.begin(); it4 != m.end(); ++it4) {
-        if ((it4 -> second < it -> second) && (it4 -> second > it3 -> second)) {
-            it3 = it4;
-        }
-    }
-
-    // find the third to max
-    map<string, int>::iterator it5 = m.begin();
-    for (map<string, int>::iterator it6 = m.begin(); it6 != m.end(); ++it6) {
-        if ((it6 -> second < it3 -> second) && (it6 -> second > it5 -> second)) {
-            it5 = it6;
-        }
-    }
-
-    cout << "Address with the highest occurrence is: " + it -> first << endl;
-    cout << to_string(it -> second) + " occurrences out of " + to_string(m.size()) + 
-            " unique addresses" << endl;
-    cout << "Address with the second highest occurrence is: " + it3 -> first << endl;
-    cout << to_string(it3 -> second) + " occurrences out of " + to_string(m.size()) + 
-            " unique addresses" << endl;
-    cout << "Address with the third highest occurrence is: " + it5 -> first << endl;
-    cout << to_string(it5 -> second) + " occurrences out of " + to_string(m.size()) + 
-            " unique addresses" << endl;
-
-    if (checkIfValid(it, it3, it5)) {
-        cout << it -> first << " is very likely to be target" << endl;
-    } else {
-        cout << it -> first << " not likely to be target" << endl;
-    }
-
-    return m;
+static void show_usage() {
+    cout << "usage message here" << endl;
 }
 
-
-bool checkIfValid(map<string, int>::iterator it_first, map<string, int>::iterator it_second, map<string, int>::iterator it_third) {
-    bool ret = false;
-    double percent = it_first -> second / numAddress;
-
-    // Guess 1
-    // target has occurrence higher than 5%
-    if (percent >= 0.05) {
-        ret = true;
-    } else {
-        ret = false;
+void getFrequency(char* frequency, int& start_frequency, int& end_frequency) {
+    // process start and end frequency
+    char* middle = strchr(frequency, ',');
+    if (middle != NULL) {
+        end_frequency = atoi(middle + 1);
+        char* start_string = (char *)malloc(middle - frequency + 1);
+        memcpy(start_string, frequency, middle - frequency);
+        start_string[middle - frequency] = '\0';
+        start_frequency = atoi(start_string);
     }
-
-    // Guess 2
-    // check if first and second have similar address
-    string addressFirst = it_first -> first;
-    string addressSecond = it_second -> first;
-    if (addressFirst.compare(0, 5, addressSecond.substr(0, 5)) == 0) {
-        ret = false;
-    } else {
-        ret = true;
-    }
-
-    return ret;
 }
 
+void findAllOccurringChannels(Frequency &radio, string &address, unordered_set<int> &candidateChannel) {
+    radio.reset();
+    while(radio.hasNext()) {
+        int i = radio.next();
+        // reads input file
+        string fileName = "./scans/" + to_string(i) + ".txt";
+        ifstream file(fileName);
+        string line;
 
-// exports number of frequency for each address to a txt file
-void exportMapValues(map<string, int> &m) {
-    // write to a new file
-    ofstream file("frequency.txt");
-
-    file << "frequency\n";
-
-    map<string, int>::iterator it = m.begin();
-    for (it; it != m.end(); ++it) {
-        file << to_string(it -> second) << endl; 
+        bool flag = false;  // go to the next file if current file contains target
+        while (getline(file, line) && !flag) {
+            const string temp = line.substr(0, line.find(" "));
+            int num = temp.compare(address);
+            if (num == 0) {
+                candidateChannel.insert(i);
+                flag = true;
+            }
+        }
     }
-
-    file.close();
 }
 
+void printInfo(const char* com, int& start_frequency, int& end_frequency, int& increment, int& numChannel) {
+    cout << "--------------------------------------------" << endl;
+    cout << "Scanning on COM port " << com << endl;
+    cout << "Scanning frequency from " << start_frequency << " MHz to " << end_frequency << " MHz" << endl;
+    cout << "Scanning with channel width set to " << increment << " MHz" << endl;
+    cout << "Will need to scan " << numChannel << " channels" << endl;
+    cout << "--------------------------------------------" << endl;
+}

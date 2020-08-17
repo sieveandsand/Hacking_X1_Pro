@@ -5,56 +5,43 @@
 #include <assert.h>
 using namespace std;
 
+/*
+    nRF24L01 has 126 channels
+    channel number: 0 - 125
+    0   --> 2400 MHz
+    1   --> 2401 MHz
+    ......
+    124 --> 2524 MHz
+    125 --> 2525 MHz
+*/
+
+#define NRF_FREQUENCY_MIN       2400
+#define NRF_FREQUENCY_MAX       2525
+#define NRF_CHANNEL_MIN         0
+#define NRF_CHANNEL_MAX         125
+
 class Frequency {
     private:
-    int next_frequency;
-
-    public:
     int start_frequency;            // in MHz
     int end_frequency;              // in MHz
     int increment;                  // aka how wide each channel is
     int channel;                    // current channel number
+
+    public:
     int num_channel;                // number of channels available
 
-    Frequency() {
-        start_frequency     = 2402;
-        end_frequency       = 2480;
-        increment           = 2;
-        channel             = 1;
-        num_channel         = 40;
-        next_frequency   = 2402;
-    }
+    Frequency(int start_frequency, int end_frequency, int increment);
 
-    Frequency(int start_frequency, int end_frequency, int increment) {
-        this -> start_frequency = start_frequency;
-        this -> end_frequency = end_frequency;
-        this -> increment = increment;
-        channel = 1;
-        num_channel = (end_frequency - start_frequency) / increment + 1;
-        next_frequency = start_frequency;
-        check_inv();
-    }
-
-    bool check_inv() const {
-        assert(start_frequency <= end_frequency);
-        assert(increment > 0 && increment <= (end_frequency - start_frequency));
-        assert(channel <= num_channel);
-    }
+    void check_inv() const;
     
-    int next() {
-        if (next_frequency > end_frequency) {
-            return NULL;
-        }
+    int next();
 
-        int ret = next_frequency;
-        next_frequency += increment;
-        ++channel;
-        return ret;
-    }
+    bool hasNext();
 
-    bool hasNext() {
-        return next_frequency <= end_frequency;
-    }
+    void reset();
 
+    int getChannel();
+
+    int getFrequency();
 };
 #endif
