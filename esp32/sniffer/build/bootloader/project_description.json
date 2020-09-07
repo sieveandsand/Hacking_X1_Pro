@@ -1,0 +1,18 @@
+{
+    "project_name":       "bootloader",
+    "project_path":       "C:/Users/Feifan/ESP/components/bootloader/subproject",
+    "build_dir":          "C:/Users/Feifan/repos/Hacking_X1_Pro/esp32/sniffer/build/bootloader",
+    "config_file":        "C:/Users/Feifan/repos/Hacking_X1_Pro/esp32/sniffer/sdkconfig",
+    "config_defaults":    "",
+    "app_elf":            "bootloader.elf",
+    "app_bin":            "bootloader.bin",
+    "git_revision":       "v4.0.1-dirty",
+    "phy_data_partition": "",
+    "monitor_baud" : "115200",
+    "config_environment" : {
+        "COMPONENT_KCONFIGS" : "C:/Users/Feifan/ESP/components/efuse/Kconfig;C:/Users/Feifan/ESP/components/esp32/Kconfig;C:/Users/Feifan/ESP/components/esp_common/Kconfig;C:/Users/Feifan/ESP/components/log/Kconfig;C:/Users/Feifan/ESP/components/spi_flash/Kconfig",
+        "COMPONENT_KCONFIGS_PROJBUILD" : "C:/Users/Feifan/ESP/components/bootloader/Kconfig.projbuild;C:/Users/Feifan/ESP/components/esptool_py/Kconfig.projbuild;C:/Users/Feifan/ESP/components/partition_table/Kconfig.projbuild"
+    },
+    "build_components" : [ "bootloader", "bootloader_support", "efuse", "esp32", "esp_common", "esp_rom", "esptool_py", "log", "main", "micro-ecc", "partition_table", "soc", "spi_flash", "xtensa", "" ],
+    "build_component_paths" : [ "C:/Users/Feifan/ESP/components/bootloader", "C:/Users/Feifan/ESP/components/bootloader_support", "C:/Users/Feifan/ESP/components/efuse", "C:/Users/Feifan/ESP/components/esp32", "C:/Users/Feifan/ESP/components/esp_common", "C:/Users/Feifan/ESP/components/esp_rom", "C:/Users/Feifan/ESP/components/esptool_py", "C:/Users/Feifan/ESP/components/log", "C:/Users/Feifan/ESP/components/bootloader/subproject/main", "C:/Users/Feifan/ESP/components/bootloader/subproject/components/micro-ecc", "C:/Users/Feifan/ESP/components/partition_table", "C:/Users/Feifan/ESP/components/soc", "C:/Users/Feifan/ESP/components/spi_flash", "C:/Users/Feifan/ESP/components/xtensa", "" ]
+}
