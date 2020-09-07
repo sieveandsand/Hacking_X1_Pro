@@ -175,6 +175,8 @@ int main(int argc, char* argv[]) {
         file.close();
 
         validAddress = findOccurrence(address, i);
+        cout << i << endl;
+        cout << validAddress << endl;
         checkID(validAddress, candidateAddress);
     }
 
