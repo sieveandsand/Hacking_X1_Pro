@@ -1,4 +1,4 @@
-#include "sniffer/sniffer.h"
+#include "sniffer.h"
 
 Radio_t SNIFFER::_radio = {EXWAY_INCREMENT, EXWAY_MIN_FREQUENCY, EXWAY_MAX_FREQUENCY};
 
