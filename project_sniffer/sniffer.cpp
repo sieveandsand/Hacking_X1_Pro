@@ -46,6 +46,7 @@ int SNIFFER::_testIfValidExway() {
                             || gear == backward1 || gear == backward2 || gear == backward3 || gear == backward4) {
                                 memcpy(_valid_address, littleEndianAddress, sizeof(_valid_address));
                                 _possible_address_index = i;
+                                _prevGear = gear;
                                 #if !defined(NDEBUG) && defined(ARDUINO) && ARDUINO >= 100
                                     Serial.print("Address of the device (in hex) is: ");
                                     Serial.print(_valid_address[4], HEX);
@@ -91,10 +92,6 @@ int SNIFFER::_listenWithChannelHopping() {
 
         if (_dev.available()) {
             _dev.read(&_payload, sizeof(_payload));
-            unsigned char gear_lower_byte = _payload[GEAR_LOWER_BYTE];
-            unsigned char gear_higher_byte = _payload[GEAR_HIGHER_BYTE];
-            // combines the lower half of the higher byte and higher half of the lower byte
-            _prevGear = ((gear_higher_byte & HIGHER_MASK) << 4) | ((gear_lower_byte & LOWER_MASK) >> 4); 
             _dev.stopListening();
             return 1;
         }
@@ -114,7 +111,7 @@ unsigned char SNIFFER::_getDirectionGear() {
     unsigned char throttle_lower_byte = _payload[THROTTLE_LOWER_BYTE];
     unsigned char throttle_middle_byte = _payload[THROTTLE_MIDDLE_BYTE];
     unsigned char throttle_higher_byte = _payload[THROTTLE_HIGHER_BYTE];
-    uint32_t throttle = ((throttle_higher_byte & HIGHER_MASK) << 8) | (throttle_middle_byte << 4) | ((throttle_lower_byte & LOWER_MASK) >> 4);
+    uint32_t throttle = ((throttle_higher_byte & HIGHER_MASK) << 12) | (throttle_middle_byte << 4) | ((throttle_lower_byte & LOWER_MASK) >> 4);
 
     if (throttle > 65535) {     // 0xffff, throttle overflows to gear
         return _prevGear;
@@ -322,11 +319,7 @@ void SNIFFER::scanWithMagicID() {
 
 int SNIFFER::getDirection() {
     if (_listenWithChannelHopping()) {
-        // retrieve gear info from the packet
-        unsigned char gear_lower_byte = _payload[GEAR_LOWER_BYTE];
-        unsigned char gear_higher_byte = _payload[GEAR_HIGHER_BYTE];
-        // combines the lower half of the higher byte and higher half of the lower byte
-        unsigned char gear = ((gear_higher_byte & HIGHER_MASK) << 4) | ((gear_lower_byte & LOWER_MASK) >> 4);
+        unsigned char gear = _getDirectionGear();
         if (gear == forward1 || gear == forward2 || gear == forward3 || gear == forward4) {
             return 1;
         } else if (gear == backward1 || gear == backward2 || gear == backward3 || gear == backward4) {
@@ -342,17 +335,13 @@ uint32_t SNIFFER::getThrottle() {
         unsigned char throttle_lower_byte = _payload[THROTTLE_LOWER_BYTE];
         unsigned char throttle_middle_byte = _payload[THROTTLE_MIDDLE_BYTE];
         unsigned char throttle_higher_byte = _payload[THROTTLE_HIGHER_BYTE];
-        // have to check if throttle and gear overlap occured
-        unsigned char gear_lower_byte = _payload[GEAR_LOWER_BYTE];
-        unsigned char gear_higher_byte = _payload[GEAR_HIGHER_BYTE];
-        // combines the lower half of the higher byte and higher half of the lower byte
-        unsigned char gear = ((gear_higher_byte & HIGHER_MASK) << 4) | ((gear_lower_byte & LOWER_MASK) >> 4);
         uint32_t throttle;
+        unsigned char gear = _getDirectionGear();
         if (gear == forward1 || gear == forward2 || gear == forward3 || gear == forward4
             || gear == backward1 || gear == backward2 || gear == backward3 || gear == backward4) {
-                throttle = ((throttle_higher_byte & HIGHER_MASK) << 8) | (throttle_middle_byte << 4) | ((throttle_lower_byte & LOWER_MASK) >> 4);
+                throttle = ((throttle_higher_byte & HIGHER_MASK) << 12) | (throttle_middle_byte << 4) | ((throttle_lower_byte & LOWER_MASK) >> 4);
             } else {
-                throttle = (throttle_higher_byte << 8) | (throttle_middle_byte << 4) | ((throttle_lower_byte & LOWER_MASK) >> 4);
+                throttle = (throttle_higher_byte << 12) | (throttle_middle_byte << 4) | ((throttle_lower_byte & LOWER_MASK) >> 4);
             }
         return throttle;
     }
