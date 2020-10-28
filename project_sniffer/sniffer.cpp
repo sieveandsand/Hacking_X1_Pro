@@ -114,7 +114,7 @@ unsigned char SNIFFER::_getDirectionGear() {
     unsigned char throttle_lower_byte = _payload[THROTTLE_LOWER_BYTE];
     unsigned char throttle_middle_byte = _payload[THROTTLE_MIDDLE_BYTE];
     unsigned char throttle_higher_byte = _payload[THROTTLE_HIGHER_BYTE];
-    uint32_t throttle = ((throttle_higher_byte & HIGHER_MASK) << 16) | (throttle_middle_byte << 8) | ((throttle_lower_byte & LOWER_MASK) >> 4);
+    uint32_t throttle = ((throttle_higher_byte & HIGHER_MASK) << 8) | (throttle_middle_byte << 4) | ((throttle_lower_byte & LOWER_MASK) >> 4);
 
     if (throttle > 65535) {     // 0xffff, throttle overflows to gear
         return _prevGear;
@@ -350,9 +350,9 @@ uint32_t SNIFFER::getThrottle() {
         uint32_t throttle;
         if (gear == forward1 || gear == forward2 || gear == forward3 || gear == forward4
             || gear == backward1 || gear == backward2 || gear == backward3 || gear == backward4) {
-                throttle = ((throttle_higher_byte & HIGHER_MASK) << 16) | (throttle_middle_byte << 8) | ((throttle_lower_byte & LOWER_MASK) >> 4);
+                throttle = ((throttle_higher_byte & HIGHER_MASK) << 8) | (throttle_middle_byte << 4) | ((throttle_lower_byte & LOWER_MASK) >> 4);
             } else {
-                throttle = (throttle_higher_byte << 16) | (throttle_middle_byte << 8) | ((throttle_lower_byte & LOWER_MASK) >> 4);
+                throttle = (throttle_higher_byte << 8) | (throttle_middle_byte << 4) | ((throttle_lower_byte & LOWER_MASK) >> 4);
             }
         return throttle;
     }
