@@ -1,1 +1,0 @@
-idf_component_register(SRCS "main.cpp" "epaper.cpp" INCLUDE_DIRS "${sniffer_SOURCE_DIR}/")
